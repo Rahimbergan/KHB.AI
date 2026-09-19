@@ -1,4 +1,9 @@
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+const envUrl = import.meta.env.VITE_API_BASE_URL;
+// In browser dev mode, route requests via Vite proxy to eliminate CORS blocks
+const isDev = typeof window !== 'undefined' && import.meta.env.DEV;
+const BASE_URL = (isDev && !import.meta.env.VITE_USE_DIRECT_URL)
+  ? ''
+  : (envUrl || 'http://localhost:5000');
 
 export class ApiError extends Error {
   statusCode: number;
@@ -22,10 +27,14 @@ export async function request<T>(endpoint: string, options: RequestInit = {}): P
   headers.set('Accept', 'application/json');
 
   try {
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), 6000); // Snappy UI timeout
     const response = await fetch(url, {
       ...options,
       headers,
+      signal: controller.signal
     });
+    clearTimeout(id);
 
     if (!response.ok) {
       let errJson: any = null;
@@ -34,7 +43,7 @@ export async function request<T>(endpoint: string, options: RequestInit = {}): P
       } catch {
         // non-json response
       }
-      const message = errJson?.error?.message || `So'rov muvaffaqiyatsiz tugadi (Status: ${response.status})`;
+      const message = errJson?.error?.message || `Request failed with status ${response.status}`;
       throw new ApiError(message, response.status, errJson?.error?.details);
     }
 
@@ -43,7 +52,7 @@ export async function request<T>(endpoint: string, options: RequestInit = {}): P
     if (error instanceof ApiError) {
       throw error;
     }
-    throw new ApiError(error.message || "Backend serverga ulanib bo'lmadi. Server ishlayotganligini tekshiring.", 0, { isNetworkError: true });
+    throw new ApiError(error.message || "Failed to connect to backend", 0, { isNetworkError: true });
   }
 }
 

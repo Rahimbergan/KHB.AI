@@ -1,7 +1,10 @@
 import { Artifact } from './artifacts';
 
 export interface ChatSource {
+  id?: string;
+  type?: string;
   title: string;
+  snippet?: string;
   url?: string;
   description?: string;
 }
@@ -26,6 +29,16 @@ export interface Conversation {
   messages?: ChatMessage[];
 }
 
+export interface PaginatedConversationsResponse {
+  data: Conversation[];
+  pagination: {
+    total: number;
+    page: number;
+    page_size: number;
+    total_pages?: number;
+  };
+}
+
 export interface SendMessagePayload {
   content: string;
   attachment_ids?: string[];
@@ -38,14 +51,16 @@ export interface SendMessagePayload {
 export interface SendMessageResponse {
   message: {
     id: string;
+    conversation_id?: string;
     role: 'assistant';
     content: string;
     created_at: string;
   };
   artifacts: Artifact[];
   sources: ChatSource[];
-  usage: {
+  usage?: {
     used_claude: boolean;
     model?: string;
   };
+  used_claude?: boolean;
 }

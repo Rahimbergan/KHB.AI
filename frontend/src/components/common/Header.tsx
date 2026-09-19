@@ -1,113 +1,158 @@
-import React, { useState, useEffect } from 'react';
-import { Search, Calendar, Zap, CheckCircle2, AlertCircle, Bell, RefreshCw } from 'lucide-react';
-import { checkBackendHealth } from '../../api/dashboard';
+import React, { useState, useRef, useEffect } from 'react';
+import { Calendar, User, Sun, Moon, LogOut, Globe, Home } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
+import { LanguageSelector } from './LanguageSelector';
 
 interface Props {
-  dateRange: string;
-  setDateRange: (range: string) => void;
-  onOpenCommand: () => void;
+  dateRange?: string;
+  setDateRange?: (range: string) => void;
+  onOpenCommand?: () => void;
 }
 
-export const Header: React.FC<Props> = ({ dateRange, setDateRange, onOpenCommand }) => {
-  const [backendOnline, setBackendOnline] = useState<boolean | null>(null);
-  const [checking, setChecking] = useState(false);
-
-  const checkHealth = async () => {
-    setChecking(true);
-    try {
-      const res = await checkBackendHealth();
-      setBackendOnline(res.status === 'ok' || res.status === 'healthy');
-    } catch {
-      setBackendOnline(false);
-    } finally {
-      setChecking(false);
-    }
-  };
+export const Header: React.FC<Props> = () => {
+  const { theme, toggleTheme } = useTheme();
+  const { user, signOut } = useAuth();
+  const { t } = useLanguage();
+  const navigate = useNavigate();
+  const [profileOpen, setProfileOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    checkHealth();
-    const interval = setInterval(checkHealth, 30000); // check every 30s
-    return () => clearInterval(interval);
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setProfileOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const handleSignOut = () => {
+    signOut();
+    setProfileOpen(false);
+    navigate('/');
+  };
+
   return (
-    <header className="h-16 bg-slate-950/70 backdrop-blur-xl border-b border-white/[0.06] px-6 flex items-center justify-between sticky top-0 z-30">
-      {/* Search Input trigger */}
-      <div
-        onClick={onOpenCommand}
-        className="flex items-center gap-3 w-80 px-3.5 py-2 rounded-xl bg-slate-900/80 border border-white/[0.06] hover:border-indigo-500/40 text-xs text-slate-400 hover:text-slate-300 transition cursor-pointer shadow-inner"
-      >
-        <Search className="w-3.5 h-3.5 text-slate-400" />
-        <span className="flex-1 truncate">Qidirish yoki ⌘K buyruqlar...</span>
-        <kbd className="px-1.5 py-0.5 bg-slate-800 rounded border border-slate-700 text-[10px] font-mono text-slate-400">
-          ⌘K
-        </kbd>
+    <header
+      className="h-16 px-6 flex items-center justify-between sticky top-0 z-30 transition-colors duration-200"
+      style={{ backgroundColor: 'var(--bg-header)', borderBottom: '1px solid var(--border-color)' }}
+    >
+      {/* Left side spacer */}
+      <div className="flex items-center gap-2"></div>
+
+      {/* Center: Context Date & Seeded Period Badge */}
+      <div className="flex items-center gap-4">
+        <div
+          className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg border text-xs font-medium"
+          style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)', color: 'var(--text-main)' }}
+        >
+          <Calendar className="w-4 h-4 text-emerald-400" />
+          <span>{t('contextDate')}</span>
+          <Calendar className="w-3.5 h-3.5 opacity-40 ml-1 cursor-pointer" />
+        </div>
+        <span className="text-xs hidden sm:inline" style={{ color: 'var(--text-subtle)' }}>
+          {t('seededPeriod')}
+        </span>
       </div>
 
-      {/* Controls */}
-      <div className="flex items-center gap-3">
-        {/* Date Filter */}
-        <div className="flex items-center gap-1.5 bg-slate-900/80 border border-white/[0.06] rounded-xl px-3 py-1.5 text-xs text-slate-300 shadow-inner">
-          <Calendar className="w-3.5 h-3.5 text-indigo-400" />
-          <select
-            value={dateRange}
-            onChange={e => setDateRange(e.target.value)}
-            className="bg-transparent border-none text-xs text-slate-200 focus:outline-none cursor-pointer pr-2"
-          >
-            <option value="today" className="bg-slate-900 text-slate-200">Bugungi kun</option>
-            <option value="7d" className="bg-slate-900 text-slate-200">Oxirgi 7 kun</option>
-            <option value="30d" className="bg-slate-900 text-slate-200">Oxirgi 30 kun</option>
-            <option value="this_month" className="bg-slate-900 text-slate-200">Joriy oy</option>
-          </select>
-        </div>
+      {/* Right Controls */}
+      <div className="flex items-center gap-2.5 sm:gap-3">
+        {/* Language Selector (UZ / EN / RU) */}
+        <LanguageSelector />
 
-        {/* Live Backend Connection Indicator */}
-        <div
-          onClick={checkHealth}
-          title="Backend ulanishini tekshirish uchun bosing"
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border cursor-pointer transition ${
-            backendOnline === true
-              ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25 hover:bg-emerald-500/20'
-              : backendOnline === false
-              ? 'bg-rose-500/10 text-rose-400 border-rose-500/25 hover:bg-rose-500/20'
-              : 'bg-slate-800/60 text-slate-400 border-slate-700'
-          }`}
+        {/* Quick Link to Landing Page */}
+        <Link
+          to="/landing"
+          title={t('landingBtn')}
+          className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border text-xs font-medium transition cursor-pointer hover:border-emerald-500/50"
+          style={{
+            backgroundColor: 'var(--bg-card)',
+            borderColor: 'var(--border-color)',
+            color: 'var(--text-main)'
+          }}
         >
-          {checking ? (
-            <RefreshCw className="w-3 h-3 animate-spin" />
-          ) : backendOnline ? (
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-            </span>
-          ) : (
-            <AlertCircle className="w-3 h-3" />
-          )}
-          <span className="font-mono text-[11px]">
-            {backendOnline === true ? 'Backend: Jonli' : backendOnline === false ? 'Backend: O‘chiq' : 'Tekshirilmoqda'}
-          </span>
+          <Globe className="w-3.5 h-3.5 text-emerald-400" />
+          <span className="hidden sm:inline">{t('landingBtn')}</span>
+        </Link>
+
+        {/* Local Bito Replica pill */}
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border emerald-badge cursor-default">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span className="hidden sm:inline">{t('localBitoReplica')}</span>
+          <span className="sm:hidden">Replica</span>
         </div>
 
-        {/* AI Mode Indicator */}
-        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-semibold bg-gradient-to-r from-purple-500/10 to-indigo-500/10 text-purple-300 border border-purple-500/30">
-          <Zap className="w-3 h-3 text-purple-400" />
-          <span>Claude AI</span>
-        </div>
-
-        {/* Notification Bell */}
+        {/* Theme Toggle (Light / Dark Mode) */}
         <button
-          title="Bildirishnomalar"
-          className="p-2 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-white/[0.06] text-slate-400 hover:text-white transition relative"
+          onClick={toggleTheme}
+          title={theme === 'dark' ? 'Switch to Light mode' : 'Switch to Dark mode'}
+          className="p-2 rounded-full border transition cursor-pointer"
+          style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)', color: 'var(--text-muted)' }}
         >
-          <Bell className="w-4 h-4" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-indigo-500"></span>
+          {theme === 'dark' ? (
+            <Sun className="w-4 h-4 text-amber-400 hover:text-amber-300" />
+          ) : (
+            <Moon className="w-4 h-4 text-indigo-500 hover:text-indigo-600" />
+          )}
         </button>
 
-        {/* User avatar */}
-        <div className="flex items-center gap-2 pl-1 border-l border-white/[0.06]">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-xs font-bold text-white shadow-md shadow-indigo-500/20 ring-1 ring-white/20">
-            KB
-          </div>
+        {/* User Profile Avatar with dropdown */}
+        <div className="relative" ref={dropdownRef}>
+          <button
+            onClick={() => setProfileOpen(!profileOpen)}
+            title="User Profile & Account"
+            className="w-8 h-8 rounded-full border flex items-center justify-center transition cursor-pointer hover:border-emerald-500/50"
+            style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)', color: 'var(--text-muted)' }}
+          >
+            <User className="w-4 h-4" />
+          </button>
+
+          {profileOpen && (
+            <div
+              className="absolute right-0 mt-2 w-56 p-2 rounded-2xl border shadow-2xl z-50 animate-in fade-in duration-150 text-xs"
+              style={{
+                backgroundColor: 'var(--bg-card)',
+                borderColor: 'var(--border-color)'
+              }}
+            >
+              {/* Profile Details */}
+              <div className="p-3 border-b" style={{ borderColor: 'var(--border-color)' }}>
+                <div className="font-bold truncate" style={{ color: 'var(--text-main)' }}>
+                  {user?.name || t('appName')}
+                </div>
+                <div className="text-[11px] text-slate-400 truncate mt-0.5">
+                  {user?.email || 'admin@khb.ai'}
+                </div>
+                <div className="mt-1.5 inline-block text-[10px] px-2 py-0.5 rounded-md emerald-badge font-medium">
+                  {user?.role || 'Business Owner'}
+                </div>
+              </div>
+
+              {/* Menu Items */}
+              <div className="py-1 space-y-0.5">
+                <Link
+                  to="/landing"
+                  onClick={() => setProfileOpen(false)}
+                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/60 transition text-slate-700 dark:text-slate-200"
+                >
+                  <Home className="w-3.5 h-3.5 text-slate-400 dark:text-slate-400" />
+                  <span>{t('landingBtn')}</span>
+                </Link>
+
+                <button
+                  onClick={handleSignOut}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-rose-500/10 text-rose-400 transition cursor-pointer"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>{t('signOut')}</span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </header>

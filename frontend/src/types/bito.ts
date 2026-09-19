@@ -2,7 +2,8 @@ export interface Pagination {
   page: number;
   page_size: number;
   total: number;
-  pages: number;
+  pages?: number;
+  total_pages?: number;
 }
 
 export interface PaginatedResponse<T> {
@@ -23,11 +24,14 @@ export interface Product {
   sku?: string;
   category_id?: string;
   category_name?: string;
-  cost_price: number;
-  selling_price: number;
-  stock_quantity: number;
-  unit: string;
-  is_active: boolean;
+  category?: string;
+  cost_price?: number;
+  cost?: number;
+  selling_price?: number;
+  price?: number;
+  stock_quantity?: number;
+  unit?: string;
+  is_active?: boolean;
   created_at?: string;
 }
 
@@ -58,12 +62,14 @@ export interface Sale {
   customer_name?: string;
   sale_date: string;
   total_amount: number;
-  discount_amount: number;
+  discount_amount?: number;
   net_amount: number;
-  payment_method: 'cash' | 'card' | 'transfer';
-  status: 'completed' | 'refunded' | 'cancelled';
+  payment_method: string;
+  status: string;
+  items_summary?: string;
   notes?: string;
   created_at?: string;
+  currency?: string;
   items?: SaleItem[];
 }
 
@@ -85,31 +91,42 @@ export interface InventoryItem {
   category_name?: string;
   current_stock: number;
   min_stock_threshold: number;
-  location: string;
+  location?: string;
   is_low_stock: boolean;
   last_updated?: string;
+  last_restocked?: string;
 }
 
 export interface DailySalesReport {
   date: string;
   currency: string;
   orders_count: number;
-  refunded_count: number;
-  cancelled_count: number;
+  refunded_count?: number;
+  cancelled_count?: number;
   total_revenue: number;
-  total_cost: number;
+  total_cost?: number;
   gross_profit: number;
   gross_margin: number;
   average_order_value: number;
-  total_units_sold: number;
-  refund_amount: number;
-  hourly_sales: Array<{ hour: string; revenue: number }>;
-  top_products: Array<{ name: string; units: number; revenue: number }>;
-  disclaimer: string;
+  total_units_sold?: number;
+  refund_amount?: number;
+  hourly_sales?: Array<{ hour: string; revenue: number }>;
+  top_products?: Array<{
+    name: string;
+    units?: number;
+    units_sold?: number;
+    revenue: number;
+    category?: string;
+  }>;
+  timeline?: Array<{ date: string; revenue: number }>;
+  disclaimer?: string;
+  operating_profit?: number;
+  expenses?: number;
 }
 
 export interface SalesAnalysisMetrics {
   total_revenue: number;
+  total_cost?: number;
   revenue_change_percent: number;
   trend: 'up' | 'down';
   orders_count: number;
@@ -117,18 +134,20 @@ export interface SalesAnalysisMetrics {
   average_order_value: number;
   gross_profit: number;
   gross_margin: number;
-  refunded_count: number;
-  cancelled_count: number;
+  refunded_count?: number;
+  cancelled_count?: number;
+  profit_change_percent?: number;
 }
 
 export interface SalesAnalysisResult {
-  period: { from: string; to: string; days: number };
-  previous_period: { from: string; to: string; revenue: number };
+  id?: string;
+  period: { from: string; to: string; days?: number };
+  previous_period: { from: string; to: string; revenue: number; profit?: number; orders_count?: number };
   metrics: SalesAnalysisMetrics;
-  top_products: Array<{ name: string; units: number; revenue: number }>;
+  top_products: Array<{ name: string; units?: number; units_sold?: number; revenue: number; category?: string }>;
   top_categories: Array<{ category: string; revenue: number; units: number }>;
   timeline: Array<{ date: string; revenue: number }>;
-  anomalies: Array<{ date: string; type: 'spike' | 'drop'; description: string }>;
+  anomalies: Array<{ date: string; type: string; description?: string; message?: string }>;
   currency: string;
-  disclaimer: string;
+  disclaimer?: string;
 }
