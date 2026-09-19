@@ -5,7 +5,9 @@ from sqlalchemy import func
 from backend.app.extensions import db
 from backend.app.models import SaleOrder, SaleOrderItem, SalesAnalysisRecord
 from backend.app.services.financial_calculator import FinancialCalculator, FINANCIAL_DISCLAIMER
+from backend.app.services.regional_analyzer import RegionalAnalyzer
 from backend.app.utils.dates import get_previous_period
+
 
 
 class SalesAnalyzer:
@@ -159,6 +161,7 @@ class SalesAnalyzer:
             "sales_by_hour": sales_by_hour,
             "previous_period_comparison": period_comparison,
             "anomalies": anomalies,
+            "regional_breakdown": RegionalAnalyzer.analyze_regions(start_date, end_date),
             "disclaimer": FINANCIAL_DISCLAIMER,
         }
         return result

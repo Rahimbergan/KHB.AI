@@ -67,6 +67,7 @@ class Customer(db.Model):
     name = Column(String(255), index=True, nullable=False)
     phone = Column(String(64), nullable=True)
     email = Column(String(255), nullable=True)
+    region = Column(String(128), default="Toshkent shahri", index=True, nullable=False)
     total_orders = Column(Integer, default=0, nullable=False)
     total_spent = Column(Numeric(14, 2), default=Decimal("0.00"), nullable=False)
     created_at = Column(DateTime, default=utc_now, nullable=False)
@@ -79,6 +80,7 @@ class Customer(db.Model):
             "name": self.name,
             "phone": self.phone,
             "email": self.email,
+            "region": self.region,
             "total_orders": self.total_orders,
             "total_spent": float(self.total_spent),
             "created_at": self.created_at.isoformat() if self.created_at else None,
@@ -93,6 +95,7 @@ class SaleOrder(db.Model):
     order_date = Column(DateTime, index=True, nullable=False)
     customer_id = Column(String(64), ForeignKey("customers.id"), nullable=True)
     customer_name = Column(String(255), nullable=False)
+    region = Column(String(128), default="Toshkent shahri", index=True, nullable=False)
     status = Column(String(32), default="completed", nullable=False)  # completed, refunded, cancelled, pending
     total_amount = Column(Numeric(14, 2), nullable=False, default=Decimal("0.00"))
     total_cost = Column(Numeric(14, 2), nullable=False, default=Decimal("0.00"))
@@ -111,6 +114,7 @@ class SaleOrder(db.Model):
             "order_date": self.order_date.isoformat() if self.order_date else None,
             "customer_id": self.customer_id,
             "customer_name": self.customer_name,
+            "region": self.region,
             "status": self.status,
             "total_amount": float(self.total_amount),
             "total_cost": float(self.total_cost),
@@ -120,6 +124,7 @@ class SaleOrder(db.Model):
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "items": [item.to_dict() for item in self.items],
         }
+
 
 
 class SaleOrderItem(db.Model):
@@ -329,4 +334,28 @@ class SalesAnalysisRecord(db.Model):
         res["id"] = self.id
         res["created_at"] = self.created_at.isoformat() if self.created_at else None
         return res
+
+
+class TelegramSubscriber(db.Model):
+    __tablename__ = "telegram_subscribers"
+
+    id = Column(String(64), primary_key=True, default=gen_uuid)
+    chat_id = Column(String(64), unique=True, index=True, nullable=False)
+    username = Column(String(128), nullable=True)
+    first_name = Column(String(128), nullable=True)
+    is_active = Column(Boolean, default=True, nullable=False)
+    subscribed_at = Column(DateTime, default=utc_now, nullable=False)
+    last_message_at = Column(DateTime, nullable=True)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "chat_id": self.chat_id,
+            "username": self.username,
+            "first_name": self.first_name,
+            "is_active": self.is_active,
+            "subscribed_at": self.subscribed_at.isoformat() if self.subscribed_at else None,
+            "last_message_at": self.last_message_at.isoformat() if self.last_message_at else None,
+        }
+
 

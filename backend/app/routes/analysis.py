@@ -1,9 +1,11 @@
 import json
 import uuid
+from datetime import date
 from flask import Blueprint, request, jsonify
 from backend.app.extensions import db
 from backend.app.models import SalesAnalysisRecord
 from backend.app.services.sales_analyzer import SalesAnalyzer
+from backend.app.services.regional_analyzer import RegionalAnalyzer
 from backend.app.utils.dates import parse_date
 from backend.app.utils.errors import NotFoundError, ValidationError
 
@@ -46,3 +48,22 @@ def get_sales_analysis(analysis_id: str):
     if not rec:
         raise NotFoundError(f"Sales analysis with id '{analysis_id}' not found.")
     return jsonify(rec.to_dict()), 200
+
+
+@analysis_bp.route("/regional", methods=["GET"])
+def get_regional_analysis():
+    """
+    Returns regional sales breakdown across Uzbekistan's 14 administrative divisions.
+    Accepts query parameters: from / from_date and to / to_date.
+    """
+    from_str = request.args.get("from") or request.args.get("from_date") or "2026-01-01"
+    to_str = request.args.get("to") or request.args.get("to_date") or "2026-01-31"
+
+    start_date = parse_date(from_str)
+    end_date = parse_date(to_str)
+
+    if start_date > end_date:
+        raise ValidationError("'from' date cannot be after 'to' date.")
+
+    res = RegionalAnalyzer.analyze_regions(start_date, end_date)
+    return jsonify(res), 200

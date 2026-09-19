@@ -300,16 +300,19 @@ class LocalBitoService:
 
         # 2. Seed Customers
         customers_data = [
-            ("Azizbek Rahimov", "+998901234567", "azizbek@example.uz"),
-            ("Malika Karimova", "+998935551234", "malika.k@example.uz"),
-            ("Javokhir Aliev", "+998977778899", "javokhir@company.uz"),
-            ("Dilnoza Umarova", "+998912223344", "dilnoza.u@gmail.com"),
-            ("Rustam Khasanov", "+998946660011", "rustam.kh@outlook.com"),
-            ("Nodira Saidova", "+998903332211", "nodira@tashkent.uz"),
+            ("Azizbek Rahimov", "+998901234567", "azizbek@example.uz", "Toshkent shahri"),
+            ("Malika Karimova", "+998935551234", "malika.k@example.uz", "Samarqand viloyati"),
+            ("Javokhir Aliev", "+998977778899", "javokhir@company.uz", "Farg'ona viloyati"),
+            ("Dilnoza Umarova", "+998912223344", "dilnoza.u@gmail.com", "Andijon viloyati"),
+            ("Rustam Khasanov", "+998946660011", "rustam.kh@outlook.com", "Buxoro viloyati"),
+            ("Nodira Saidova", "+998903332211", "nodira@tashkent.uz", "Toshkent viloyati"),
+            ("Bekzod Ergashev", "+998994445566", "bekzod@namangan.uz", "Namangan viloyati"),
+            ("Shoira Mahmudova", "+998951112233", "shoira@qarshi.uz", "Qashqadaryo viloyati"),
+            ("Otabek Yusupov", "+998982221144", "otabek@urgench.uz", "Xorazm viloyati"),
         ]
         customer_entities = []
-        for name, phone, email in customers_data:
-            cust = Customer(name=name, phone=phone, email=email)
+        for name, phone, email, reg in customers_data:
+            cust = Customer(name=name, phone=phone, email=email, region=reg)
             db.session.add(cust)
             customer_entities.append(cust)
 
@@ -317,6 +320,14 @@ class LocalBitoService:
 
         # 3. Seed Sales Orders (Dec 1, 2025 to Jan 31, 2026)
         payment_methods = ["payme", "click", "card", "cash"]
+        regions_pool = [
+            "Toshkent shahri", "Toshkent viloyati", "Samarqand viloyati",
+            "Farg'ona viloyati", "Andijon viloyati", "Buxoro viloyati",
+            "Namangan viloyati", "Qashqadaryo viloyati", "Xorazm viloyati",
+            "Navoiy viloyati", "Surxondaryo viloyati", "Jizzax viloyati"
+        ]
+        regions_weights = [0.40, 0.12, 0.11, 0.08, 0.07, 0.06, 0.05, 0.04, 0.03, 0.02, 0.01, 0.01]
+
         start_date = date(2025, 12, 1)
         end_date = date(2026, 1, 31)
         total_days = (end_date - start_date).days + 1
@@ -338,6 +349,7 @@ class LocalBitoService:
                 # Select customer or walk-in
                 cust = rng.choice(customer_entities) if rng.random() > 0.4 else None
                 cust_name = cust.name if cust else "Walk-in Customer"
+                order_region = cust.region if cust else rng.choices(regions_pool, weights=regions_weights)[0]
 
                 # Pick 1 to 3 items
                 num_items = rng.choices([1, 2, 3], weights=[0.55, 0.35, 0.10])[0]
@@ -379,6 +391,7 @@ class LocalBitoService:
                     order_date=order_time,
                     customer_id=cust.id if cust else None,
                     customer_name=cust_name,
+                    region=order_region,
                     status=status,
                     total_amount=order_total,
                     total_cost=order_cost,
